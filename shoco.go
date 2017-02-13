@@ -48,10 +48,6 @@ func findBestEncoding(indices *[maxSuccessorN + 1]int16, nConsecutive int) int {
 	return -1
 }
 
-// Compress ...
-//
-// in must not contain any zero-bytes otherwise Decompress will
-// fail.
 func Compress(in []byte) (out []byte) {
 	return compress(in, false)
 }
@@ -126,6 +122,12 @@ func compress(in []byte, proposed bool) (out []byte) {
 		}
 
 		if in[0]&0x80 != 0 || in[0] == 0x00 { // non-ascii case or NUL char
+			// Encoding NUL chars in this way is not compatible with
+			// shoco_compress. shoco_compress terminates the compression
+			// upon encountering a NUL char. shoco_decompress will
+			// nonetheless correctly decode compressed strings that
+			// contained NUL chars.
+
 			buf.WriteByte(0x00) // put in a sentinel byte
 		}
 
