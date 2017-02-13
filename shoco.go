@@ -37,17 +37,6 @@ type Model struct {
 
 var DefaultModel = WordsEnModel
 
-func decodeHeader(val byte) int {
-	i := -1
-
-	for val&0x80 != 0 {
-		val <<= 1
-		i++
-	}
-
-	return i
-}
-
 func (p *Pack) checkIndices(indices []int16) bool {
 	for i := 0; i < p.BytesUnpacked; i++ {
 		if indices[i] > p.Masks[i] {
@@ -168,7 +157,12 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 	buf.Grow(len(in) * 2)
 
 	for len(in) != 0 {
-		mark := decodeHeader(in[0])
+		mark := -1
+		for val := in[0]; val&0x80 != 0; {
+			val <<= 1
+			mark++
+		}
+
 		if mark < 0 {
 			if proposed {
 				// See https://github.com/Ed-von-Schleck/shoco/issues/11
