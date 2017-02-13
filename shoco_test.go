@@ -96,45 +96,62 @@ func TestDecompress(t *testing.T) {
 	}
 }
 
+var testModels = []struct {
+	name  string
+	model *Model
+}{
+	{"WordsEnModel", WordsEnModel},
+	{"TextEnModel", TextEnModel},
+	{"FilePathModel", FilePathModel},
+}
+
 func TestRoundTrip(t *testing.T) {
-	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
-		return in, nil
-	}, func(in []byte) (out []byte, err error) {
-		if len(in) == 0 {
-			return in, nil
-		}
+	for _, m := range testModels {
+		t.Run(m.name, func(t *testing.T) {
+			if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
+				return in, nil
+			}, func(in []byte) (out []byte, err error) {
+				if len(in) == 0 {
+					return in, nil
+				}
 
-		b := Compress(in)
+				b := m.model.Compress(in)
 
-		if out, err = Decompress(b); err != nil {
-			t.Logf("in:         %x", in)
-			t.Logf("compressed: %x", b)
-		}
+				if out, err = m.model.Decompress(b); err != nil {
+					t.Logf("in:         %x", in)
+					t.Logf("compressed: %x", b)
+				}
 
-		return
-	}, nil); err != nil {
-		t.Fatal(err)
+				return
+			}, nil); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
 func TestProposedRoundTrip(t *testing.T) {
-	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
-		return in, nil
-	}, func(in []byte) (out []byte, err error) {
-		if len(in) == 0 {
-			return in, nil
-		}
+	for _, m := range testModels {
+		t.Run(m.name, func(t *testing.T) {
+			if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
+				return in, nil
+			}, func(in []byte) (out []byte, err error) {
+				if len(in) == 0 {
+					return in, nil
+				}
 
-		b := ProposedCompress(in)
+				b := m.model.ProposedCompress(in)
 
-		if out, err = ProposedDecompress(b); err != nil {
-			t.Logf("in:         %x", in)
-			t.Logf("compressed: %x", b)
-		}
+				if out, err = m.model.ProposedDecompress(b); err != nil {
+					t.Logf("in:         %x", in)
+					t.Logf("compressed: %x", b)
+				}
 
-		return
-	}, nil); err != nil {
-		t.Fatal(err)
+				return
+			}, nil); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
