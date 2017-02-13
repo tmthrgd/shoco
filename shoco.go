@@ -43,7 +43,7 @@ type Pack struct {
 	Masks         [8]int16
 }
 
-func (p *Pack) checkIndices(indices []int16) bool {
+func (p *Pack) checkIndices(indices *[8]int16) bool {
 	for i := 0; i < p.BytesUnpacked; i++ {
 		if indices[i] > p.Masks[i] {
 			return false
@@ -63,7 +63,7 @@ type Model struct {
 	MaxSuccessorN               int
 }
 
-func (m *Model) findBestEncoding(indices []int16, nConsecutive int) int {
+func (m *Model) findBestEncoding(indices *[8]int16, nConsecutive int) int {
 	for p := len(m.Packs) - 1; p >= 0; p-- {
 		if nConsecutive >= m.Packs[p].BytesUnpacked && m.Packs[p].checkIndices(indices) {
 			return p
@@ -85,7 +85,7 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 	var buf bytes.Buffer
 	buf.Grow(len(in))
 
-	indices := make([]int16, m.MaxSuccessorN+1)
+	var indices [8]int16
 
 	for len(in) != 0 {
 		// find the longest string of known successors
@@ -109,7 +109,7 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 			}
 
 			if nConsecutive >= 2 {
-				if packN := m.findBestEncoding(indices, nConsecutive); packN >= 0 {
+				if packN := m.findBestEncoding(&indices, nConsecutive); packN >= 0 {
 					code := m.Packs[packN].Word
 					for i := 0; i < m.Packs[packN].BytesUnpacked; i++ {
 						code |= uint32(indices[i]) << m.Packs[packN].Offsets[i]
