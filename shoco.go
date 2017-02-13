@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"sync"
 )
 
 var ErrInvalid = errors.New("shoco: invalid input")
@@ -54,6 +55,8 @@ func (p *Pack) checkIndices(indices *[8]int16) bool {
 }
 
 type Model struct {
+	check sync.Once
+
 	ChrsByChrId                 []byte
 	ChrIdsByChr                 [256]int8
 	SuccessorIdsByChrIdAndChrId [][]int8
@@ -61,6 +64,30 @@ type Model struct {
 	Packs                       []Pack
 	MinChr                      byte
 	MaxSuccessorN               int
+}
+
+func (m *Model) checkValid() {
+	const invalidModel = "invalid model"
+
+	if len(m.ChrsByChrId) == 0 ||
+		len(m.SuccessorIdsByChrIdAndChrId) != len(m.ChrsByChrId) ||
+		len(m.ChrsByChrAndSuccessorId) == 0 || len(m.Packs) == 0 ||
+		m.MaxSuccessorN > 7 {
+		panic(invalidModel)
+	}
+
+	for _, s := range m.SuccessorIdsByChrIdAndChrId {
+		if len(s) != len(m.ChrsByChrId) {
+			panic(invalidModel)
+		}
+	}
+
+	for _, p := range m.Packs {
+		if p.BytesPacked == 0 || p.BytesPacked > 4 || p.BytesPacked&(p.BytesPacked-1) != 0 ||
+			p.BytesUnpacked == 0 || p.BytesUnpacked > 8 || p.BytesUnpacked&(p.BytesUnpacked-1) != 0 {
+			panic(invalidModel)
+		}
+	}
 }
 
 func (m *Model) findBestEncoding(indices *[8]int16, nConsecutive int) int {
@@ -82,6 +109,8 @@ func (m *Model) ProposedCompress(in []byte) (out []byte) {
 }
 
 func (m *Model) compress(in []byte, proposed bool) (out []byte) {
+	m.check.Do(m.checkValid)
+
 	var buf bytes.Buffer
 	buf.Grow(len(in))
 
@@ -169,6 +198,8 @@ func (m *Model) ProposedDecompress(in []byte) (out []byte, err error) {
 }
 
 func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
+	m.check.Do(m.checkValid)
+
 	var buf bytes.Buffer
 	buf.Grow(len(in) * 2)
 
