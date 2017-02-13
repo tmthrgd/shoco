@@ -129,7 +129,7 @@ func TestRoundTrip(t *testing.T) {
 
 func BenchmarkCompress(b *testing.B) {
 	for i, testCase := range testCases {
-		b.Run(fmt.Sprintf("testcase#%d", i), func(b *testing.B) {
+		b.Run(fmt.Sprintf("#%d-%d", i, len(testCase.in)), func(b *testing.B) {
 			in := []byte(testCase.in)
 			b.SetBytes(int64(len(in)))
 
@@ -148,14 +148,13 @@ func BenchmarkCompress(b *testing.B) {
 
 func BenchmarkDecompress(b *testing.B) {
 	for i, testCase := range testCases {
-		b.Run(fmt.Sprintf("testcase#%d", i), func(b *testing.B) {
-			out, err := hex.DecodeString(testCase.out)
-			if err != nil {
-				b.Fatal(err)
-			}
+		out, err := hex.DecodeString(testCase.out)
+		if err != nil {
+			b.Fatal(err)
+		}
 
+		b.Run(fmt.Sprintf("#%d-%d", i, len(out)), func(b *testing.B) {
 			b.SetBytes(int64(len(out)))
-			b.ResetTimer()
 
 			if testCase.proposed {
 				for n := 0; n < b.N; n++ {
