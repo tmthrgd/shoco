@@ -8,7 +8,9 @@ package shoco
 import (
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 	"testing/quick"
@@ -171,4 +173,45 @@ func BenchmarkDecompress(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkWords(b *testing.B) {
+	f, err := os.Open("/usr/share/dict/words")
+	if err != nil {
+		if os.IsNotExist(err) {
+			b.Skip("/usr/share/dict/words does not exist")
+		}
+
+		b.Fatal(err)
+	}
+
+	in, err := ioutil.ReadAll(f)
+	f.Close()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	out := Compress(in)
+
+	b.Logf("len(in)  = %dB", len(in))
+	b.Logf("len(out) = %dB", len(out))
+	b.Logf("ratio    = %f%%", float64(len(out))/float64(len(in)))
+
+	b.Run("Compress", func(b *testing.B) {
+		b.SetBytes(int64(len(in)))
+
+		for n := 0; n < b.N; n++ {
+			var _ = Compress(in)
+		}
+	})
+
+	b.Run("Decompress", func(b *testing.B) {
+		b.SetBytes(int64(len(out)))
+
+		for n := 0; n < b.N; n++ {
+			if _, err = Decompress(out); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }

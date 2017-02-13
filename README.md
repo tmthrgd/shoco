@@ -58,6 +58,15 @@ BenchmarkDecompress/#19-5-8      	10000000	       154 ns/op	  32.31 MB/s
 BenchmarkDecompress/#20-5-8      	10000000	       156 ns/op	  31.92 MB/s
 ```
 
+```
+BenchmarkWords/Compress-8         	     100	  20082664 ns/op	  46.75 MB/s
+BenchmarkWords/Decompress-8       	     100	  15940867 ns/op	  41.56 MB/s
+--- BENCH: BenchmarkWords
+	shoco_test.go:196: len(in)  = 938848B
+	shoco_test.go:197: len(out) = 662545B
+	shoco_test.go:198: ratio    = 0.705700%
+```
+
 ## License
 
 Unless otherwise noted, the shoco source files are distributed under the Modified BSD License
