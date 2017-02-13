@@ -48,9 +48,9 @@ func decodeHeader(val byte) int {
 	return i
 }
 
-func checkIndices(indices []int16, pack *Pack) bool {
-	for i := 0; i < pack.BytesUnpacked; i++ {
-		if indices[i] > pack.Masks[i] {
+func (p *Pack) checkIndices(indices []int16) bool {
+	for i := 0; i < p.BytesUnpacked; i++ {
+		if indices[i] > p.Masks[i] {
 			return false
 		}
 	}
@@ -60,7 +60,7 @@ func checkIndices(indices []int16, pack *Pack) bool {
 
 func (m *Model) findBestEncoding(indices []int16, nConsecutive int) int {
 	for p := len(m.Packs) - 1; p >= 0; p-- {
-		if nConsecutive >= m.Packs[p].BytesUnpacked && checkIndices(indices, &m.Packs[p]) {
+		if nConsecutive >= m.Packs[p].BytesUnpacked && m.Packs[p].checkIndices(indices) {
 			return p
 		}
 	}
