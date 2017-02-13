@@ -125,7 +125,7 @@ func compress(in []byte, proposed bool) (out []byte) {
 			continue
 		}
 
-		if in[0]&0x80 != 0 { // non-ascii case
+		if in[0]&0x80 != 0 || in[0] == 0x00 { // non-ascii case or NUL char
 			buf.WriteByte(0x00) // put in a sentinel byte
 		}
 

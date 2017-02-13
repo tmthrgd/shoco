@@ -9,9 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
-	"reflect"
 	"testing"
 	"testing/quick"
 )
@@ -64,6 +62,7 @@ var testCases = []struct {
 	{"μ", "00ce00bc", false},
 	{"μδ", "00ce00bc00ce00b4", false},
 	{"\U0001f601", "00f0009f00980081", false},
+	{"test\x00test", "c8990000c899", false},
 
 	// See https://github.com/Ed-von-Schleck/shoco/issues/11
 	{"μ", "01cebc", true},
@@ -111,20 +110,7 @@ func TestRoundTrip(t *testing.T) {
 		}
 
 		return
-	}, &quick.Config{
-		Values: func(values []reflect.Value, rand *rand.Rand) {
-			in := make([]byte, rand.Intn(16*1024))
-			rand.Read(in)
-
-			for i := range in {
-				for in[i] == 0 {
-					in[i] = ^byte(rand.Intn(0x100))
-				}
-			}
-
-			values[0] = reflect.ValueOf(in)
-		},
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatal(err)
 	}
 }
