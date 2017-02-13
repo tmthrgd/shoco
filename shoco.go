@@ -155,7 +155,7 @@ func decompress(in []byte, proposed bool) (out []byte, err error) {
 				// See https://github.com/Ed-von-Schleck/shoco/issues/11
 				if in[0] < 0x09 {
 					j := in[0] + 1
-					if len(in) < int(j) {
+					if len(in) < 1+int(j) {
 						return nil, ErrInvalid
 					}
 
