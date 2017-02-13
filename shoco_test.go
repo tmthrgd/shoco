@@ -9,7 +9,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"reflect"
 	"testing"
 	"testing/quick"
 )
@@ -111,6 +113,29 @@ func TestRoundTrip(t *testing.T) {
 
 		return
 	}, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDecompressASCII(t *testing.T) {
+	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
+		return in, nil
+	}, Decompress, &quick.Config{
+		Values: func(values []reflect.Value, rand *rand.Rand) {
+			in := make([]byte, 1+rand.Intn(128))
+			rand.Read(in)
+
+			for i := range in {
+				in[i] &^= 0x80
+
+				for in[i] == 0 {
+					in[i] = ^byte(rand.Intn(0x100)) &^ 0x80
+				}
+			}
+
+			values[0] = reflect.ValueOf(in)
+		},
+	}); err != nil {
 		t.Fatal(err)
 	}
 }
