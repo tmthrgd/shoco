@@ -53,6 +53,14 @@ func findBestEncoding(indices *[maxSuccessorN + 1]int16, nConsecutive int) int {
 // in must not contain any zero-bytes otherwise Decompress will
 // fail.
 func Compress(in []byte) (out []byte) {
+	return compress(in, false)
+}
+
+func ProposedCompress(in []byte) (out []byte) {
+	return compress(in, true)
+}
+
+func compress(in []byte, proposed bool) (out []byte) {
 	var buf bytes.Buffer
 	buf.Grow(len(in))
 
@@ -96,6 +104,27 @@ func Compress(in []byte) (out []byte) {
 			}
 		}
 
+		if proposed {
+			// See https://github.com/Ed-von-Schleck/shoco/issues/11
+			if in[0]&0x80 != 0 || in[0] < 0x09 {
+				j := byte(1)
+				for ; int(j) < len(in) && j <= 0x09; j++ {
+					if in[j]&0x80 == 0 && in[j] >= 0x09 {
+						break
+					}
+				}
+
+				buf.WriteByte(j - 1)
+				buf.Write(in[:j])
+				in = in[j:]
+			} else {
+				buf.WriteByte(in[0])
+				in = in[1:]
+			}
+
+			continue
+		}
+
 		if in[0]&0x80 != 0 { // non-ascii case
 			buf.WriteByte(0x00) // put in a sentinel byte
 		}
@@ -108,12 +137,38 @@ func Compress(in []byte) (out []byte) {
 }
 
 func Decompress(in []byte) (out []byte, err error) {
+	return decompress(in, false)
+}
+
+func ProposedDecompress(in []byte) (out []byte, err error) {
+	return decompress(in, true)
+}
+
+func decompress(in []byte, proposed bool) (out []byte, err error) {
 	var buf bytes.Buffer
 	buf.Grow(len(in) * 2)
 
 	for len(in) != 0 {
 		mark := decodeHeader(in[0])
 		if mark < 0 {
+			if proposed {
+				// See https://github.com/Ed-von-Schleck/shoco/issues/11
+				if in[0] < 0x09 {
+					j := in[0] + 1
+					if len(in) < int(j) {
+						return nil, ErrInvalid
+					}
+
+					buf.Write(in[1 : 1+j])
+					in = in[1+j:]
+				} else {
+					buf.WriteByte(in[0])
+					in = in[1:]
+				}
+
+				continue
+			}
+
 			if in[0] == 0x00 { // ignore the sentinel value for non-ascii chars
 				if len(in) < 2 {
 					return nil, ErrInvalid
