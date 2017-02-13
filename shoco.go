@@ -104,7 +104,7 @@ func compress(in []byte, proposed bool) (out []byte) {
 			// See https://github.com/Ed-von-Schleck/shoco/issues/11
 			if in[0]&0x80 != 0 || in[0] < 0x09 {
 				j := byte(1)
-				for ; int(j) < len(in) && j <= 0x09 && (in[j]&0x80 != 0 || in[j] < 0x09); j++ {
+				for ; int(j) < len(in) && j < 0x09 && (in[j]&0x80 != 0 || in[j] < 0x09); j++ {
 				}
 
 				buf.WriteByte(j - 1)
