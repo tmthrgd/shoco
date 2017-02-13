@@ -117,6 +117,27 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
+func TestProposedRoundTrip(t *testing.T) {
+	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
+		return in, nil
+	}, func(in []byte) (out []byte, err error) {
+		if len(in) == 0 {
+			return in, nil
+		}
+
+		b := ProposedCompress(in)
+
+		if out, err = ProposedDecompress(b); err != nil {
+			t.Logf("in:         %x", in)
+			t.Logf("compressed: %x", b)
+		}
+
+		return
+	}, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDecompressASCII(t *testing.T) {
 	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
 		return in, nil
