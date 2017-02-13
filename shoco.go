@@ -17,12 +17,40 @@ import (
 
 var ErrInvalid = errors.New("shoco: invalid input")
 
+var DefaultModel = WordsEnModel
+
+func Compress(in []byte) (out []byte) {
+	return DefaultModel.Compress(in)
+}
+
+func ProposedCompress(in []byte) (out []byte) {
+	return DefaultModel.ProposedCompress(in)
+}
+
+func Decompress(in []byte) (out []byte, err error) {
+	return DefaultModel.Decompress(in)
+}
+
+func ProposedDecompress(in []byte) (out []byte, err error) {
+	return DefaultModel.ProposedDecompress(in)
+}
+
 type Pack struct {
 	Word          uint32
 	BytesPacked   int
 	BytesUnpacked int
 	Offsets       [8]uint
 	Masks         [8]int16
+}
+
+func (p *Pack) checkIndices(indices []int16) bool {
+	for i := 0; i < p.BytesUnpacked; i++ {
+		if indices[i] > p.Masks[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 type Model struct {
@@ -33,18 +61,6 @@ type Model struct {
 	Packs                       []Pack
 	MinChr                      byte
 	MaxSuccessorN               int
-}
-
-var DefaultModel = WordsEnModel
-
-func (p *Pack) checkIndices(indices []int16) bool {
-	for i := 0; i < p.BytesUnpacked; i++ {
-		if indices[i] > p.Masks[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (m *Model) findBestEncoding(indices []int16, nConsecutive int) int {
@@ -221,20 +237,4 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-func Compress(in []byte) (out []byte) {
-	return DefaultModel.Compress(in)
-}
-
-func ProposedCompress(in []byte) (out []byte) {
-	return DefaultModel.ProposedCompress(in)
-}
-
-func Decompress(in []byte) (out []byte, err error) {
-	return DefaultModel.Decompress(in)
-}
-
-func ProposedDecompress(in []byte) (out []byte, err error) {
-	return DefaultModel.ProposedDecompress(in)
 }
