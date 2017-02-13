@@ -174,8 +174,7 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 
 	for len(in) != 0 {
 		mark := -1
-		for val := in[0]; val&0x80 != 0; {
-			val <<= 1
+		for val := in[0]; val&0x80 != 0; val <<= 1 {
 			mark++
 		}
 
