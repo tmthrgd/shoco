@@ -133,8 +133,14 @@ func BenchmarkCompress(b *testing.B) {
 			in := []byte(testCase.in)
 			b.SetBytes(int64(len(in)))
 
-			for n := 0; n < b.N; n++ {
-				var _ = Compress(in)
+			if testCase.proposed {
+				for n := 0; n < b.N; n++ {
+					var _ = ProposedCompress(in)
+				}
+			} else {
+				for n := 0; n < b.N; n++ {
+					var _ = Compress(in)
+				}
 			}
 		})
 	}
@@ -151,9 +157,17 @@ func BenchmarkDecompress(b *testing.B) {
 			b.SetBytes(int64(len(out)))
 			b.ResetTimer()
 
-			for n := 0; n < b.N; n++ {
-				if _, err = Decompress(out); err != nil {
-					b.Fatal(err)
+			if testCase.proposed {
+				for n := 0; n < b.N; n++ {
+					if _, err = ProposedDecompress(out); err != nil {
+						b.Fatal(err)
+					}
+				}
+			} else {
+				for n := 0; n < b.N; n++ {
+					if _, err = Decompress(out); err != nil {
+						b.Fatal(err)
+					}
 				}
 			}
 		})
