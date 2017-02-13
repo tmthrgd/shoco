@@ -161,6 +161,7 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 				for ; int(j) < len(in) && j < 0x09 && (in[j]&0x80 != 0 || in[j] < 0x09); j++ {
 				}
 
+				buf.Grow(1 + int(j))
 				buf.WriteByte(j - 1)
 				buf.Write(in[:j])
 				in = in[j:]
@@ -179,6 +180,7 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 			// nonetheless correctly decode compressed strings that
 			// contained NUL chars.
 
+			buf.Grow(2)
 			buf.WriteByte(0x00) // put in a sentinel byte
 		}
 
@@ -246,6 +248,8 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 		if mark >= len(m.Packs) || m.Packs[mark].BytesPacked > len(in) {
 			return nil, ErrInvalid
 		}
+
+		buf.Grow(m.Packs[mark].BytesUnpacked)
 
 		var codeBuf [4]byte
 		copy(codeBuf[:], in[:m.Packs[mark].BytesPacked])
