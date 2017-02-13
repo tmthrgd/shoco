@@ -23,8 +23,6 @@ type Pack struct {
 	BytesUnpacked int
 	Offsets       [8]uint
 	Masks         [8]int16
-	HeaderMask    byte
-	Header        byte
 }
 
 type Model struct {
@@ -33,11 +31,8 @@ type Model struct {
 	SuccessorIdsByChrIdAndChrId [][]int8
 	ChrsByChrAndSuccessorId     [][]byte
 	Packs                       []Pack
-
-	MinChr byte
-	MaxChr byte
-
-	MaxSuccessorN int
+	MinChr                      byte
+	MaxSuccessorN               int
 }
 
 func decodeHeader(val byte) int {
