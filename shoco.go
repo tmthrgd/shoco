@@ -222,13 +222,24 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 
 		offset, mask := m.Packs[mark].Offsets[0], m.Packs[mark].Masks[0]
 
-		lastChr := m.ChrsByChrId[(code>>offset)&uint32(mask)]
+		idx := (code >> offset) & uint32(mask)
+		if int(idx) >= len(m.ChrsByChrId) {
+			return nil, ErrInvalid
+		}
+
+		lastChr := m.ChrsByChrId[idx]
 		buf.WriteByte(lastChr)
 
 		for i := 1; i < m.Packs[mark].BytesUnpacked; i++ {
 			offset, mask := m.Packs[mark].Offsets[i], m.Packs[mark].Masks[i]
 
-			lastChr = m.ChrsByChrAndSuccessorId[lastChr-m.MinChr][(code>>offset)&uint32(mask)]
+			idx0, idx1 := lastChr-m.MinChr, (code>>offset)&uint32(mask)
+			if int(idx0) >= len(m.ChrsByChrAndSuccessorId) ||
+				int(idx1) >= len(m.ChrsByChrAndSuccessorId[idx0]) {
+				return nil, ErrInvalid
+			}
+
+			lastChr = m.ChrsByChrAndSuccessorId[idx0][idx1]
 			buf.WriteByte(lastChr)
 		}
 
