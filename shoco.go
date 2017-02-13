@@ -35,6 +35,8 @@ type Model struct {
 	MaxSuccessorN               int
 }
 
+var DefaultModel = WordsEnModel
+
 func decodeHeader(val byte) int {
 	i := -1
 
