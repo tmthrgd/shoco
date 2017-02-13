@@ -67,7 +67,7 @@ type Model struct {
 }
 
 func (m *Model) checkValid() {
-	const invalidModel = "invalid model"
+	const invalidModel = "shoco: invalid model"
 
 	if len(m.ChrsByChrId) == 0 ||
 		len(m.SuccessorIdsByChrIdAndChrId) != len(m.ChrsByChrId) ||
