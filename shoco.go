@@ -17,6 +17,29 @@ import (
 
 var ErrInvalid = errors.New("shoco: invalid input")
 
+type Pack struct {
+	Word          uint32
+	BytesPacked   int
+	BytesUnpacked int
+	Offsets       [8]uint
+	Masks         [8]int16
+	HeaderMask    byte
+	Header        byte
+}
+
+type Model struct {
+	ChrsByChrId                 []byte
+	ChrIdsByChr                 [256]int8
+	SuccessorIdsByChrIdAndChrId [][]int8
+	ChrsByChrAndSuccessorId     [][]byte
+	Packs                       []Pack
+
+	MinChr byte
+	MaxChr byte
+
+	MaxSuccessorN int
+}
+
 func decodeHeader(val byte) int {
 	i := -1
 
@@ -28,9 +51,9 @@ func decodeHeader(val byte) int {
 	return i
 }
 
-func checkIndices(indices *[maxSuccessorN + 1]int16, pack *pack) bool {
-	for i := 0; i < pack.bytesUnpacked; i++ {
-		if indices[i] > pack.masks[i] {
+func checkIndices(indices []int16, pack *Pack) bool {
+	for i := 0; i < pack.BytesUnpacked; i++ {
+		if indices[i] > pack.Masks[i] {
 			return false
 		}
 	}
@@ -38,9 +61,9 @@ func checkIndices(indices *[maxSuccessorN + 1]int16, pack *pack) bool {
 	return true
 }
 
-func findBestEncoding(indices *[maxSuccessorN + 1]int16, nConsecutive int) int {
-	for p := packCount - 1; p >= 0; p-- {
-		if nConsecutive >= packs[p].bytesUnpacked && checkIndices(indices, &packs[p]) {
+func (m *Model) findBestEncoding(indices []int16, nConsecutive int) int {
+	for p := len(m.Packs) - 1; p >= 0; p-- {
+		if nConsecutive >= m.Packs[p].BytesUnpacked && checkIndices(indices, &m.Packs[p]) {
 			return p
 		}
 	}
@@ -48,33 +71,33 @@ func findBestEncoding(indices *[maxSuccessorN + 1]int16, nConsecutive int) int {
 	return -1
 }
 
-func Compress(in []byte) (out []byte) {
-	return compress(in, false)
+func (m *Model) Compress(in []byte) (out []byte) {
+	return m.compress(in, false)
 }
 
-func ProposedCompress(in []byte) (out []byte) {
-	return compress(in, true)
+func (m *Model) ProposedCompress(in []byte) (out []byte) {
+	return m.compress(in, true)
 }
 
-func compress(in []byte, proposed bool) (out []byte) {
+func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 	var buf bytes.Buffer
 	buf.Grow(len(in))
 
-	var indices [maxSuccessorN + 1]int16
+	indices := make([]int16, m.MaxSuccessorN+1)
 
 	for len(in) != 0 {
 		// find the longest string of known successors
-		indices[0] = int16(chrIdsByChr[in[0]])
+		indices[0] = int16(m.ChrIdsByChr[in[0]])
 
 		if lastChrIndex := indices[0]; lastChrIndex >= 0 {
 			nConsecutive := 1
-			for ; nConsecutive <= maxSuccessorN && nConsecutive < len(in); nConsecutive++ {
-				currentIndex := chrIdsByChr[in[nConsecutive]]
+			for ; nConsecutive <= m.MaxSuccessorN && nConsecutive < len(in); nConsecutive++ {
+				currentIndex := m.ChrIdsByChr[in[nConsecutive]]
 				if currentIndex < 0 { // '\0' is always -1
 					break
 				}
 
-				sucessorIndex := successorIdsByChrIdAndChrId[lastChrIndex][currentIndex]
+				sucessorIndex := m.SuccessorIdsByChrIdAndChrId[lastChrIndex][currentIndex]
 				if sucessorIndex < 0 {
 					break
 				}
@@ -84,17 +107,17 @@ func compress(in []byte, proposed bool) (out []byte) {
 			}
 
 			if nConsecutive >= 2 {
-				if packN := findBestEncoding(&indices, nConsecutive); packN >= 0 {
-					code := packs[packN].word
-					for i := 0; i < packs[packN].bytesUnpacked; i++ {
-						code |= uint32(indices[i]) << packs[packN].offsets[i]
+				if packN := m.findBestEncoding(indices, nConsecutive); packN >= 0 {
+					code := m.Packs[packN].Word
+					for i := 0; i < m.Packs[packN].BytesUnpacked; i++ {
+						code |= uint32(indices[i]) << m.Packs[packN].Offsets[i]
 					}
 
 					var codeBuf [4]byte
 					binary.BigEndian.PutUint32(codeBuf[:], code)
-					buf.Write(codeBuf[:packs[packN].bytesPacked])
+					buf.Write(codeBuf[:m.Packs[packN].BytesPacked])
 
-					in = in[packs[packN].bytesUnpacked:]
+					in = in[m.Packs[packN].BytesUnpacked:]
 					continue
 				}
 			}
@@ -135,15 +158,15 @@ func compress(in []byte, proposed bool) (out []byte) {
 	return buf.Bytes()
 }
 
-func Decompress(in []byte) (out []byte, err error) {
-	return decompress(in, false)
+func (m *Model) Decompress(in []byte) (out []byte, err error) {
+	return m.decompress(in, false)
 }
 
-func ProposedDecompress(in []byte) (out []byte, err error) {
-	return decompress(in, true)
+func (m *Model) ProposedDecompress(in []byte) (out []byte, err error) {
+	return m.decompress(in, true)
 }
 
-func decompress(in []byte, proposed bool) (out []byte, err error) {
+func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 	var buf bytes.Buffer
 	buf.Grow(len(in) * 2)
 
@@ -183,28 +206,44 @@ func decompress(in []byte, proposed bool) (out []byte, err error) {
 			continue
 		}
 
-		if mark >= len(packs) || packs[mark].bytesPacked > len(in) {
+		if mark >= len(m.Packs) || m.Packs[mark].BytesPacked > len(in) {
 			return nil, ErrInvalid
 		}
 
 		var codeBuf [4]byte
-		copy(codeBuf[:], in[:packs[mark].bytesPacked])
+		copy(codeBuf[:], in[:m.Packs[mark].BytesPacked])
 		code := binary.BigEndian.Uint32(codeBuf[:])
 
-		offset, mask := packs[mark].offsets[0], packs[mark].masks[0]
+		offset, mask := m.Packs[mark].Offsets[0], m.Packs[mark].Masks[0]
 
-		lastChr := chrsByChrId[(code>>offset)&uint32(mask)]
+		lastChr := m.ChrsByChrId[(code>>offset)&uint32(mask)]
 		buf.WriteByte(lastChr)
 
-		for i := 1; i < packs[mark].bytesUnpacked; i++ {
-			offset, mask := packs[mark].offsets[i], packs[mark].masks[i]
+		for i := 1; i < m.Packs[mark].BytesUnpacked; i++ {
+			offset, mask := m.Packs[mark].Offsets[i], m.Packs[mark].Masks[i]
 
-			lastChr = chrsByChrAndSuccessorId[lastChr-minChr][(code>>offset)&uint32(mask)]
+			lastChr = m.ChrsByChrAndSuccessorId[lastChr-m.MinChr][(code>>offset)&uint32(mask)]
 			buf.WriteByte(lastChr)
 		}
 
-		in = in[packs[mark].bytesPacked:]
+		in = in[m.Packs[mark].BytesPacked:]
 	}
 
 	return buf.Bytes(), nil
+}
+
+func Compress(in []byte) (out []byte) {
+	return DefaultModel.Compress(in)
+}
+
+func ProposedCompress(in []byte) (out []byte) {
+	return DefaultModel.ProposedCompress(in)
+}
+
+func Decompress(in []byte) (out []byte, err error) {
+	return DefaultModel.Decompress(in)
+}
+
+func ProposedDecompress(in []byte) (out []byte, err error) {
+	return DefaultModel.ProposedDecompress(in)
 }
