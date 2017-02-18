@@ -57,10 +57,10 @@ func (p *Pack) checkIndices(indices *[8]int16) bool {
 type Model struct {
 	check sync.Once
 
-	ChrsByChrId                 []byte
+	ChrsByChrID                 []byte
 	ChrIdsByChr                 [256]int8
-	SuccessorIdsByChrIdAndChrId [][]int8
-	ChrsByChrAndSuccessorId     [][]byte
+	SuccessorIDsByChrIDAndChrID [][]int8
+	ChrsByChrAndSuccessorID     [][]byte
 	Packs                       []Pack
 	MinChr                      byte
 	MaxSuccessorN               int
@@ -69,15 +69,15 @@ type Model struct {
 func (m *Model) checkValid() {
 	const invalidModel = "shoco: invalid model"
 
-	if len(m.ChrsByChrId) == 0 ||
-		len(m.SuccessorIdsByChrIdAndChrId) != len(m.ChrsByChrId) ||
-		len(m.ChrsByChrAndSuccessorId) == 0 || len(m.Packs) == 0 ||
+	if len(m.ChrsByChrID) == 0 ||
+		len(m.SuccessorIDsByChrIDAndChrID) != len(m.ChrsByChrID) ||
+		len(m.ChrsByChrAndSuccessorID) == 0 || len(m.Packs) == 0 ||
 		m.MaxSuccessorN > 7 {
 		panic(invalidModel)
 	}
 
-	for _, s := range m.SuccessorIdsByChrIdAndChrId {
-		if len(s) != len(m.ChrsByChrId) {
+	for _, s := range m.SuccessorIDsByChrIDAndChrID {
+		if len(s) != len(m.ChrsByChrID) {
 			panic(invalidModel)
 		}
 	}
@@ -128,7 +128,7 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 					break
 				}
 
-				sucessorIndex := m.SuccessorIdsByChrIdAndChrId[lastChrIndex][currentIndex]
+				sucessorIndex := m.SuccessorIDsByChrIDAndChrID[lastChrIndex][currentIndex]
 				if sucessorIndex < 0 {
 					break
 				}
@@ -258,23 +258,23 @@ func (m *Model) decompress(in []byte, proposed bool) (out []byte, err error) {
 		offset, mask := m.Packs[mark].Offsets[0], m.Packs[mark].Masks[0]
 
 		idx := (code >> offset) & uint32(mask)
-		if int(idx) >= len(m.ChrsByChrId) {
+		if int(idx) >= len(m.ChrsByChrID) {
 			return nil, ErrInvalid
 		}
 
-		lastChr := m.ChrsByChrId[idx]
+		lastChr := m.ChrsByChrID[idx]
 		buf.WriteByte(lastChr)
 
 		for i := 1; i < m.Packs[mark].BytesUnpacked; i++ {
 			offset, mask := m.Packs[mark].Offsets[i], m.Packs[mark].Masks[i]
 
 			idx0, idx1 := lastChr-m.MinChr, (code>>offset)&uint32(mask)
-			if int(idx0) >= len(m.ChrsByChrAndSuccessorId) ||
-				int(idx1) >= len(m.ChrsByChrAndSuccessorId[idx0]) {
+			if int(idx0) >= len(m.ChrsByChrAndSuccessorID) ||
+				int(idx1) >= len(m.ChrsByChrAndSuccessorID[idx0]) {
 				return nil, ErrInvalid
 			}
 
-			lastChr = m.ChrsByChrAndSuccessorId[idx0][idx1]
+			lastChr = m.ChrsByChrAndSuccessorID[idx0][idx1]
 			buf.WriteByte(lastChr)
 		}
 
