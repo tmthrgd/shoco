@@ -7,6 +7,8 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
+// Package shoco is a compressor for small text strings based on the shoco C
+// library.
 package shoco
 
 import (
@@ -16,26 +18,39 @@ import (
 	"sync"
 )
 
+// ErrInvalid is returned by decompress functions when the compressed input
+// data is malformed.
 var ErrInvalid = errors.New("shoco: invalid input")
 
+// DefaultModel is the default model used by the package level functions.
 var DefaultModel = WordsEnModel
 
+// Compress uses DefaultModel to compress the input data.
 func Compress(in []byte) (out []byte) {
 	return DefaultModel.Compress(in)
 }
 
+// ProposedCompress uses DefaultModel to compress the input data, it uses a
+// shorter encoding for non-ASCII characters.
 func ProposedCompress(in []byte) (out []byte) {
 	return DefaultModel.ProposedCompress(in)
 }
 
+// Decompress uses DefaultModel to decompress the input data, it will return
+// an error if the data is invalid.
 func Decompress(in []byte) (out []byte, err error) {
 	return DefaultModel.Decompress(in)
 }
 
+// ProposedDecompress uses DefaultModel to decompress the input data, it will
+// return an error if the data is invalid. It requires the data to have been
+// previously compressed with the shorter encoding produced by
+// ProposedCompress.
 func ProposedDecompress(in []byte) (out []byte, err error) {
 	return DefaultModel.ProposedDecompress(in)
 }
 
+// Pack represents encoding data for a shoco compression model.
 type Pack struct {
 	Word          uint32
 	BytesPacked   int
@@ -54,6 +69,12 @@ func (p *Pack) checkIndices(indices *[8]int16) bool {
 	return true
 }
 
+// Model represents a shoco compression model.
+//
+// It can be generated using the generate_compressor_model.py script in
+// Ed-von-Schleck/shoco. The output of that script will require conversion to
+// Go code.
+// The script is available at: https://github.com/Ed-von-Schleck/shoco/blob/4dee0fc850cdec2bdb911093fe0a6a56e3623b71/generate_compressor_model.py.
 type Model struct {
 	check sync.Once
 
@@ -100,10 +121,13 @@ func (m *Model) findBestEncoding(indices *[8]int16, nConsecutive int) int {
 	return -1
 }
 
+// Compress uses the given model to compress the input data.
 func (m *Model) Compress(in []byte) (out []byte) {
 	return m.compress(in, false)
 }
 
+// ProposedCompress uses the given model to compress the input data, it uses a
+// shorter encoding for non-ASCII characters.
 func (m *Model) ProposedCompress(in []byte) (out []byte) {
 	return m.compress(in, true)
 }
@@ -191,10 +215,16 @@ func (m *Model) compress(in []byte, proposed bool) (out []byte) {
 	return buf.Bytes()
 }
 
+// Decompress uses the given model to decompress the input data, it will return
+// an error if the data is invalid.
 func (m *Model) Decompress(in []byte) (out []byte, err error) {
 	return m.decompress(in, false)
 }
 
+// ProposedDecompress uses the given model to decompress the input data, it
+// will return an error if the data is invalid. It requires the data to have
+// been previously compressed with the shorter encoding produced by
+// ProposedCompress.
 func (m *Model) ProposedDecompress(in []byte) (out []byte, err error) {
 	return m.decompress(in, true)
 }
