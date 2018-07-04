@@ -3,7 +3,7 @@
 // Modified BSD License license that can be found in
 // the LICENSE file.
 
-package shoco
+package shoco_test
 
 import (
 	"encoding/hex"
@@ -14,14 +14,17 @@ import (
 	"reflect"
 	"testing"
 	"testing/quick"
+
+	"github.com/tmthrgd/shoco"
+	"github.com/tmthrgd/shoco/models"
 )
 
 func testCompress(in string, proposed bool) string {
 	if proposed {
-		return hex.EncodeToString(ProposedCompress([]byte(in)))
+		return hex.EncodeToString(shoco.ProposedCompress([]byte(in)))
 	}
 
-	return hex.EncodeToString(Compress([]byte(in)))
+	return hex.EncodeToString(shoco.Compress([]byte(in)))
 }
 
 func testDecompress(in string, proposed bool) (string, error) {
@@ -31,11 +34,11 @@ func testDecompress(in string, proposed bool) (string, error) {
 	}
 
 	if proposed {
-		out, err := ProposedDecompress(b)
+		out, err := shoco.ProposedDecompress(b)
 		return string(out), err
 	}
 
-	out, err := Decompress(b)
+	out, err := shoco.Decompress(b)
 	return string(out), err
 }
 
@@ -98,11 +101,11 @@ func TestDecompress(t *testing.T) {
 
 var testModels = []struct {
 	name  string
-	model *Model
+	model *shoco.Model
 }{
-	{"WordsEnModel", WordsEnModel},
-	{"TextEnModel", TextEnModel},
-	{"FilePathModel", FilePathModel},
+	{"WordsEn", models.WordsEn()},
+	{"TextEn", models.TextEn()},
+	{"FilePath", models.FilePath()},
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -158,7 +161,7 @@ func TestProposedRoundTrip(t *testing.T) {
 func TestDecompressASCII(t *testing.T) {
 	if err := quick.CheckEqual(func(in []byte) (out []byte, err error) {
 		return in, nil
-	}, Decompress, &quick.Config{
+	}, shoco.Decompress, &quick.Config{
 		Values: func(values []reflect.Value, rand *rand.Rand) {
 			in := make([]byte, 1+rand.Intn(128))
 			rand.Read(in)
@@ -186,11 +189,11 @@ func BenchmarkCompress(b *testing.B) {
 
 			if testCase.proposed {
 				for n := 0; n < b.N; n++ {
-					var _ = ProposedCompress(in)
+					var _ = shoco.ProposedCompress(in)
 				}
 			} else {
 				for n := 0; n < b.N; n++ {
-					var _ = Compress(in)
+					var _ = shoco.Compress(in)
 				}
 			}
 		})
@@ -209,13 +212,13 @@ func BenchmarkDecompress(b *testing.B) {
 
 			if testCase.proposed {
 				for n := 0; n < b.N; n++ {
-					if _, err = ProposedDecompress(out); err != nil {
+					if _, err = shoco.ProposedDecompress(out); err != nil {
 						b.Fatal(err)
 					}
 				}
 			} else {
 				for n := 0; n < b.N; n++ {
-					if _, err = Decompress(out); err != nil {
+					if _, err = shoco.Decompress(out); err != nil {
 						b.Fatal(err)
 					}
 				}
@@ -240,7 +243,7 @@ func BenchmarkWords(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	out := Compress(in)
+	out := shoco.Compress(in)
 
 	b.Logf("len(in)  = %dB", len(in))
 	b.Logf("len(out) = %dB", len(out))
@@ -250,7 +253,7 @@ func BenchmarkWords(b *testing.B) {
 		b.SetBytes(int64(len(in)))
 
 		for n := 0; n < b.N; n++ {
-			var _ = Compress(in)
+			var _ = shoco.Compress(in)
 		}
 	})
 
@@ -258,7 +261,7 @@ func BenchmarkWords(b *testing.B) {
 		b.SetBytes(int64(len(out)))
 
 		for n := 0; n < b.N; n++ {
-			if _, err = Decompress(out); err != nil {
+			if _, err = shoco.Decompress(out); err != nil {
 				b.Fatal(err)
 			}
 		}
