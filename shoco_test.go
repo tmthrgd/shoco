@@ -106,6 +106,7 @@ var testModels = []struct {
 	{"WordsEn", models.WordsEn()},
 	{"TextEn", models.TextEn()},
 	{"FilePath", models.FilePath()},
+	{"Emails", models.Emails()},
 }
 
 func TestRoundTrip(t *testing.T) {
