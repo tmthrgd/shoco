@@ -139,9 +139,9 @@ var emailsModel = &shoco.Model{
 		{'o', 'a', 'i', 'e', '.', '@', 'z', 'h', 'u', 'y', 'd', 'f', 'j', '-', 'l', '1'},
 	},
 	Packs: []shoco.Pack{
-		{0x80000000, 1, 2, [8]uint{26, 24, 24, 24, 24, 24, 24}, [8]int16{15, 3, 0, 0, 0, 0, 0}},
-		{0xc0000000, 2, 4, [8]uint{25, 21, 18, 16, 16, 16, 16}, [8]int16{15, 15, 7, 3, 0, 0, 0}},
-		{0xe0000000, 4, 8, [8]uint{24, 20, 16, 12, 9, 6, 3, 0}, [8]int16{15, 15, 15, 15, 7, 7, 7, 7}},
+		{Word: 0x80000000, BytesPacked: 1, BytesUnpacked: 2, Offsets: [8]uint{26, 24, 24, 24, 24, 24, 24}, Masks: [8]int16{15, 3, 0, 0, 0, 0, 0}},
+		{Word: 0xc0000000, BytesPacked: 2, BytesUnpacked: 4, Offsets: [8]uint{25, 21, 18, 16, 16, 16, 16}, Masks: [8]int16{15, 15, 7, 3, 0, 0, 0}},
+		{Word: 0xe0000000, BytesPacked: 4, BytesUnpacked: 8, Offsets: [8]uint{24, 20, 16, 12, 9, 6, 3, 0}, Masks: [8]int16{15, 15, 15, 15, 7, 7, 7, 7}},
 	},
 	MinChr:        45,
 	MaxSuccessorN: 7,
